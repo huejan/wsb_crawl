@@ -4,24 +4,34 @@ import threading
 from dotenv import load_dotenv
 load_dotenv()
 
-print("dotenv loaded in main.py") # Debug print
+import logging
+
+# --- Basic Logging Setup ---
+# Configure logging to output to stdout, which Docker logs will capture.
+# Gunicorn will also handle this output.
+logging.basicConfig(level=logging.DEBUG, # Set to DEBUG to capture all levels of logs
+                    format='%(asctime)s %(levelname)s [%(name)s] [%(threadName)s] %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+# --- End Basic Logging Setup ---
+
+logger.info("dotenv loaded in main.py")
 try:
-    import google.generativeai as genai
-    print("Successfully imported google.generativeai in main.py")
+    import google.generativeai as genai # Test import
+    logger.info("Successfully imported google.generativeai in main.py")
 except ImportError as e:
-    print(f"CRITICAL ERROR: Failed to import google.generativeai in main.py: {e}")
-    # Optionally, re-raise or sys.exit to make failure more obvious if this is the root cause
-    raise # This will definitely stop Gunicorn if the import fails here
+    logger.critical(f"Failed to import google.generativeai in main.py: {e}", exc_info=True)
+    raise
 except Exception as e:
-    print(f"CRITICAL ERROR: Unexpected error importing google.generativeai in main.py: {e}")
+    logger.critical(f"Unexpected error importing google.generativeai in main.py: {e}", exc_info=True)
     raise
 
 
 from flask import Flask, render_template, jsonify
 
 # Import components from your application AFTER load_dotenv
-from .analysis import get_analyzed_data, ANALYZED_DATA_STORE, PROCESSED_ITEM_IDS
-from .scheduler import run_scheduler_in_thread, initialize_clients as initialize_scheduler_clients
+from .analysis import get_analyzed_data, ANALYZED_DATA_STORE, PROCESSED_ITEM_IDS # analysis also uses print, might need update
+from .scheduler import run_scheduler_in_thread, initialize_clients as initialize_scheduler_clients # scheduler uses print
 
 app = Flask(__name__)
 
@@ -77,32 +87,46 @@ def get_status_counts():
 
 
 # --- Application Startup ---
-def run_server():
-    """Runs the Flask development server."""
-    # Flask's dev server is not recommended for production.
-    # Use a production-ready WSGI server like Gunicorn or uWSGI behind a reverse proxy (Nginx).
-    # For Docker, Gunicorn is a common choice.
-    print(f"Flask server starting on http://0.0.0.0:{PORT}")
-    app.run(host='0.0.0.0', port=PORT, debug=False) # debug=False for production/docker
+# The run_server() function is not directly called when using Gunicorn.
+# Gunicorn itself will serve the `app` instance.
+# The `if __name__ == '__main__':` block is primarily for local development.
+
+# Gunicorn will load this file as a module, so the code outside of functions/classes
+# (like Flask app instantiation and client initialization for the scheduler)
+# needs to be handled carefully. Gunicorn typically runs the `if __name__ == '__main__':`
+# block in its main process before forking workers if using `--preload`.
+# However, to ensure scheduler starts reliably with Gunicorn,
+# it's often better to manage it slightly differently or ensure `--preload` is used if startup logic is complex.
+
+# For now, the scheduler initialization logic below is mostly for when running `python -m app.main` directly.
+# When Gunicorn runs `app.main:app`, it will create the `app` object.
+# The scheduler thread needs to be started by the Gunicorn master process or a dedicated entrypoint
+# if we want it to run alongside Gunicorn workers without `--preload` complexities.
+# Let's simplify for now: the scheduler will start if this module is run directly.
+# For Gunicorn, the scheduler will be started in each worker if not preloaded, which is not ideal.
+# A better approach for Gunicorn might be to use a Gunicorn server hook (e.g. `on_starting`)
+# or run the scheduler as a separate process/service.
+# Given the current setup, the initial_scheduler_clients() and run_scheduler_in_thread()
+# will be called when Gunicorn loads `app.main:app`. This means each worker might try to start its own scheduler thread.
+# This is not ideal for resource usage but might work for basic functionality.
+# A more robust Gunicorn setup would use `--preload` and ensure these are called once.
+
+logger.info("Initializing application components...")
+if not initialize_scheduler_clients():
+    logger.critical("Failed to initialize clients for the scheduler. Background tasks may not run.")
+else:
+    scheduler_thread = run_scheduler_in_thread() # This will now run when Gunicorn loads the app
+    if scheduler_thread:
+        logger.info(f"Scheduler thread '{scheduler_thread.name}' started by Gunicorn worker or main process.")
+    else:
+        logger.error("Scheduler thread failed to start.")
+
 
 if __name__ == '__main__':
-    print("Initializing application...")
-
-    # Initialize Reddit/Gemini clients for the scheduler
-    # This ensures they are ready before the first scheduled job runs.
-    # The scheduler itself will also try to initialize if they are not set.
-    if not initialize_scheduler_clients():
-        print("CRITICAL: Failed to initialize clients for the scheduler. Background tasks may not run.")
-        # Decide if the app should exit or continue with web server only
-        # For now, it will continue, but scheduler won't work.
-    else:
-        # Start the background scheduler
-        scheduler_thread = run_scheduler_in_thread()
-        print(f"Scheduler thread started: {scheduler_thread.name}")
-
-    # Start the Flask web server
-    # This will block the main thread. The scheduler runs in a background thread.
-    run_server()
-
-    # Note: If run_server() is blocking, code here won't be reached until server stops.
-    print("Application shutting down...")
+    # This block is for running the Flask development server directly (e.g., python -m app.main)
+    # It's not used by Gunicorn directly, Gunicorn uses the `app` instance.
+    logger.info("Running Flask development server directly...")
+    # Note: The scheduler thread is already started above when the module is loaded.
+    # This is okay for local dev, but for Gunicorn, see notes above.
+    app.run(host='0.0.0.0', port=PORT, debug=True, use_reloader=False) # use_reloader=False if scheduler runs in same process
+    logger.info("Flask development server shutting down...")
