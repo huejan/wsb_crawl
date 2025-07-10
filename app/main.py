@@ -4,6 +4,19 @@ import threading
 from dotenv import load_dotenv
 load_dotenv()
 
+print("dotenv loaded in main.py") # Debug print
+try:
+    import google.generativeai as genai
+    print("Successfully imported google.generativeai in main.py")
+except ImportError as e:
+    print(f"CRITICAL ERROR: Failed to import google.generativeai in main.py: {e}")
+    # Optionally, re-raise or sys.exit to make failure more obvious if this is the root cause
+    raise # This will definitely stop Gunicorn if the import fails here
+except Exception as e:
+    print(f"CRITICAL ERROR: Unexpected error importing google.generativeai in main.py: {e}")
+    raise
+
+
 from flask import Flask, render_template, jsonify
 
 # Import components from your application AFTER load_dotenv
