@@ -8,7 +8,7 @@ from .reddit_client import get_reddit_instance
 from .gemini_client import get_gemini_model
 from .analysis import run_analysis_cycle
 
-load_dotenv()
+# load_dotenv() # Removed - this was causing the NameError
 
 # Global instances for Reddit and Gemini to avoid re-initializing every time
 # This is okay for a single-threaded scheduler. If using multi-threading
