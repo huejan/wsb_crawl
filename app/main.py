@@ -1,12 +1,12 @@
-from flask import Flask, render_template, jsonify
 import os
-from dotenv import load_dotenv
 import threading
-
-# Load environment variables from .env file
+# Load environment variables *before* other application imports that might need them
+from dotenv import load_dotenv
 load_dotenv()
 
-# Import components from your application
+from flask import Flask, render_template, jsonify
+
+# Import components from your application AFTER load_dotenv
 from .analysis import get_analyzed_data, ANALYZED_DATA_STORE, PROCESSED_ITEM_IDS
 from .scheduler import run_scheduler_in_thread, initialize_clients as initialize_scheduler_clients
 

@@ -1,8 +1,8 @@
 import google.generativeai as genai
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv # Removed, should be loaded in main.py
 
-load_dotenv()
+# load_dotenv() # Removed
 
 def configure_gemini():
     """

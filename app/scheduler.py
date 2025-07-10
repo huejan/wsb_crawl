@@ -2,7 +2,7 @@ import schedule
 import time
 import threading
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv # Removed, should be loaded in main.py
 
 from .reddit_client import get_reddit_instance
 from .gemini_client import get_gemini_model

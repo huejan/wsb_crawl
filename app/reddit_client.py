@@ -1,8 +1,8 @@
 import praw
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv # Removed, should be loaded in main.py
 
-load_dotenv()
+# load_dotenv() # Removed
 
 def get_reddit_instance():
     """
