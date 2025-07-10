@@ -1,5 +1,7 @@
 # Start with a Python base image
-FROM python:3.11-slim
+# Switch to the full python:3.11 image to test if missing system dependencies
+# in the slim image were causing issues with google-generativeai import.
+FROM python:3.11
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
