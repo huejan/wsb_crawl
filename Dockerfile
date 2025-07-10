@@ -30,4 +30,5 @@ EXPOSE 8080
 # This makes the Dockerfile more self-contained if PORT isn't passed at runtime,
 # though our app/main.py and .env.example already default to 8080.
 # The `app.main:app` refers to the `app` Flask instance in the `app/main.py` file.
-CMD ["sh", "-c", "gunicorn --workers ${GUNICORN_WORKERS:-2} --bind 0.0.0.0:${PORT:-8080} app.main:app"]
+# Added --log-level debug, --access-logfile -, and --error-logfile - for more verbose logging to stdout/stderr.
+CMD ["sh", "-c", "gunicorn --workers ${GUNICORN_WORKERS:-2} --bind 0.0.0.0:${PORT:-8080} --log-level debug --access-logfile - --error-logfile - app.main:app"]

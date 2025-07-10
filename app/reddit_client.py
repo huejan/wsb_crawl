@@ -1,8 +1,11 @@
 import praw
 import os
+import logging # Import logging
 # from dotenv import load_dotenv # Removed, should be loaded in main.py
 
 # load_dotenv() # Removed
+
+logger = logging.getLogger(__name__) # Get logger instance
 
 def get_reddit_instance():
     """
@@ -15,18 +18,27 @@ def get_reddit_instance():
     password = os.getenv("REDDIT_PASSWORD")
 
     if not all([client_id, client_secret, user_agent]):
-        raise ValueError("Missing Reddit API credentials in .env file (CLIENT_ID, CLIENT_SECRET, USER_AGENT)")
+        # Log error and raise ValueError
+        err_msg = "Missing Reddit API credentials in .env file (CLIENT_ID, CLIENT_SECRET, USER_AGENT)"
+        logger.error(err_msg)
+        raise ValueError(err_msg)
 
-    reddit = praw.Reddit(
-        client_id=client_id,
-        client_secret=client_secret,
-        user_agent=user_agent,
-        username=username,
-        password=password,
-        # check_for_async=False # Add this if you encounter issues with async operations, though PRAW handles it mostly
-    )
-    print("Reddit instance created successfully.")
-    return reddit
+    try:
+        reddit = praw.Reddit(
+            client_id=client_id,
+            client_secret=client_secret,
+            user_agent=user_agent,
+            username=username,
+            password=password,
+            # check_for_async=False # Add this if you encounter issues with async operations, though PRAW handles it mostly
+        )
+        logger.info("Reddit instance created successfully.")
+        # You can also log the username if provided, to confirm which account is being used (be careful with logging PII)
+        # logger.debug(f"Reddit instance for user: {username if username else 'read-only default'}")
+        return reddit
+    except Exception as e:
+        logger.error(f"Failed to create Reddit instance: {e}", exc_info=True)
+        raise # Re-raise the exception after logging
 
 def get_wallstreetbets_posts(reddit: praw.Reddit, limit: int = 25):
     """
@@ -45,7 +57,7 @@ def get_wallstreetbets_posts(reddit: praw.Reddit, limit: int = 25):
         # Fetching 'hot' posts for now, could also be 'new', 'top', etc.
         # Consider fetching a mix or focusing on 'new' for timely analysis.
         posts = list(subreddit.hot(limit=limit))
-        print(f"Fetched {len(posts)} posts from r/{subreddit_name}")
+        logger.info(f"Fetched {len(posts)} posts from r/{subreddit_name}")
 
         # Example: Print titles and get some comments
         # for post in posts:
@@ -58,29 +70,33 @@ def get_wallstreetbets_posts(reddit: praw.Reddit, limit: int = 25):
         #     for comment in post.comments.list()[:5]: # Limiting comments for now
         #         # print(f"  Comment: {comment.body[:100]}...") # Print first 100 chars
         #         comment_count +=1
-        #     print(f"  Fetched {comment_count} sample comments for post {post.id}")
+        #     logger.debug(f"  Fetched {comment_count} sample comments for post {post.id}")
         return posts
     except Exception as e:
-        print(f"Error fetching posts from r/{subreddit_name}: {e}")
+        logger.error(f"Error fetching posts from r/{subreddit_name}: {e}", exc_info=True)
         return []
 
 if __name__ == "__main__":
     # This is for testing the reddit_client.py directly
-    print("Testing Reddit client...")
+    # Basic logging setup for direct execution testing
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    logger.info("Testing Reddit client...")
     try:
         reddit = get_reddit_instance()
         if reddit:
             # Test read-only access
-            print(f"Read-only status: {reddit.read_only}")
+            logger.info(f"Read-only status: {reddit.read_only}")
             # Attempt to fetch posts
             example_posts = get_wallstreetbets_posts(reddit, 5)
             if example_posts:
-                print(f"\nSuccessfully fetched {len(example_posts)} example posts.")
+                logger.info(f"Successfully fetched {len(example_posts)} example posts.")
                 for i, post in enumerate(example_posts):
-                    print(f"Post {i+1}: {post.title[:100]}...")
+                    logger.info(f"Post {i+1}: {post.title[:100]}...")
             else:
-                print("No posts fetched or an error occurred.")
+                logger.warning("No posts fetched or an error occurred during test.")
     except ValueError as ve:
-        print(f"Configuration Error: {ve}")
+        logger.error(f"Configuration Error: {ve}")
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred during Reddit client test: {e}", exc_info=True)

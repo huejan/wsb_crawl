@@ -1,8 +1,9 @@
 import google.generativeai as genai
 import os
+import logging # Import logging
 # from dotenv import load_dotenv # Removed, should be loaded in main.py
 
-# load_dotenv() # Removed
+logger = logging.getLogger(__name__) # Get logger instance
 
 def configure_gemini():
     """
@@ -10,9 +11,15 @@ def configure_gemini():
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("Missing GEMINI_API_KEY in .env file.")
-    genai.configure(api_key=api_key)
-    print("Gemini API configured successfully.")
+        err_msg = "Missing GEMINI_API_KEY in .env file."
+        logger.error(err_msg)
+        raise ValueError(err_msg)
+    try:
+        genai.configure(api_key=api_key)
+        logger.info("Gemini API configured successfully.")
+    except Exception as e:
+        logger.error(f"Failed to configure Gemini API: {{e}}", exc_info=True)
+        raise
 
 def get_gemini_model(model_name="gemini-1.5-flash-latest"): # Using 1.5 Flash as requested
     """
@@ -21,10 +28,10 @@ def get_gemini_model(model_name="gemini-1.5-flash-latest"): # Using 1.5 Flash as
     try:
         configure_gemini() # Ensure API is configured before getting model
         model = genai.GenerativeModel(model_name)
-        print(f"Gemini model '{model_name}' loaded successfully.")
+        logger.info(f"Gemini model '{{model_name}}' loaded successfully.")
         return model
     except Exception as e:
-        print(f"Error loading Gemini model '{model_name}': {e}")
+        logger.error(f"Error loading Gemini model '{{model_name}}': {{e}}", exc_info=True)
         raise
 
 def analyze_text_with_gemini(model: genai.GenerativeModel, text_content: str, custom_prompt: str = None):
@@ -41,12 +48,11 @@ def analyze_text_with_gemini(model: genai.GenerativeModel, text_content: str, cu
         The analysis result from Gemini as a string.
     """
     if not text_content:
-        print("No text content provided for analysis.")
-        return None
+        logger.warning("No text content provided for Gemini analysis.")
+        return '[]' # Return empty JSON array string for no content
 
     prompt = custom_prompt
     if not prompt:
-        # Default prompt designed to identify stock tickers and reasons for discussion
         prompt = f"""\
 Analyze the following text from a social media discussion about finance.
 Identify any stock tickers (e.g., GME, AAPL, TSLA) or ETF symbols (e.g., SPY, QQQ) mentioned.
@@ -81,75 +87,74 @@ JSON Output:
 """
 
     try:
-        # Configure the model to output JSON
         generation_config = genai.types.GenerationConfig(
             response_mime_type="application/json"
         )
         response = model.generate_content(prompt, generation_config=generation_config)
 
         if response.parts:
+            logger.debug(f"Gemini raw response text: {{response.text[:500]}}")
             return response.text
         elif response.prompt_feedback:
-            print(f"Gemini prompt feedback: {{response.prompt_feedback}}")
+            logger.warning(f"Gemini prompt feedback: {{response.prompt_feedback}}")
             return '{{ "error": "Analysis failed due to prompt issues", "details": "' + str(response.prompt_feedback).replace('"',"'") + '" }}'
         else:
-            print("Gemini response had no usable parts and no explicit feedback.")
+            logger.warning("Gemini response had no usable parts and no explicit feedback.")
             return '{{ "error": "No analysis result from Gemini" }}'
 
     except Exception as e:
-        print(f"Error analyzing text with Gemini: {{e}}")
+        logger.error(f"Error analyzing text with Gemini: {{e}}", exc_info=True)
         return '{{ "error": "Error during Gemini analysis", "details": "' + str(e).replace('"',"'") + '" }}'
 
 if __name__ == "__main__":
-    # This is for testing the gemini_client.py directly
-    print("Testing Gemini client with JSON output...")
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    logger.info("Testing Gemini client with JSON output...")
     try:
         model = get_gemini_model()
         if model:
             sample_text_1 = "I think GME is going to the moon! Cramer said otherwise though. What about SPY today? And some $PLTR for good measure."
-            print(f"\n--- Analyzing sample text 1: ---\n'{{sample_text_1}}'")
+            logger.info(f"--- Analyzing sample text 1: ---\n'{{sample_text_1}}'")
             analysis_1 = analyze_text_with_gemini(model, sample_text_1)
-            print("\n--- Gemini Analysis 1 (JSON): ---")
-            print(analysis_1)
+            logger.info("--- Gemini Analysis 1 (JSON): ---")
+            logger.info(analysis_1)
             import json
             try:
                 parsed = json.loads(analysis_1)
-                print("Successfully parsed JSON output.")
+                logger.info("Successfully parsed JSON output.")
                 if isinstance(parsed, list):
-                    print(f"Found {{len(parsed)}} items.")
+                    logger.info(f"Found {{len(parsed)}} items.")
                 elif isinstance(parsed, dict) and "error" in parsed:
-                    print(f"Gemini returned an error object: {{parsed['error']}}")
+                    logger.warning(f"Gemini returned an error object: {{parsed['error']}}")
             except json.JSONDecodeError as je:
-                print(f"Failed to parse JSON output: {{je}}")
-
+                logger.error(f"Failed to parse JSON output: {{je}}")
 
             sample_text_2 = "Anyone looking at NVDA earnings next week? Could be huge. TSLA also seems quiet lately."
-            print(f"\n--- Analyzing sample text 2: ---\n'{{sample_text_2}}'")
+            logger.info(f"--- Analyzing sample text 2: ---\n'{{sample_text_2}}'")
             analysis_2 = analyze_text_with_gemini(model, sample_text_2)
-            print("\n--- Gemini Analysis 2 (JSON): ---")
-            print(analysis_2)
+            logger.info("--- Gemini Analysis 2 (JSON): ---")
+            logger.info(analysis_2)
             try:
                 parsed = json.loads(analysis_2)
-                print("Successfully parsed JSON output.")
+                logger.info("Successfully parsed JSON output for sample 2.")
             except json.JSONDecodeError as je:
-                print(f"Failed to parse JSON output for sample 2: {{je}}")
+                logger.error(f"Failed to parse JSON output for sample 2: {{je}}")
 
             sample_text_3 = "Just bought some apples and bananas at the grocery store."
-            print(f"\n--- Analyzing sample text 3 (no stocks): ---\n'{{sample_text_3}}'")
+            logger.info(f"--- Analyzing sample text 3 (no stocks): ---\n'{{sample_text_3}}'")
             analysis_3 = analyze_text_with_gemini(model, sample_text_3)
-            print("\n--- Gemini Analysis 3 (JSON - should be empty array or error): ---")
-            print(analysis_3)
+            logger.info("--- Gemini Analysis 3 (JSON - should be empty array or error): ---")
+            logger.info(analysis_3)
             try:
                 parsed = json.loads(analysis_3)
-                print("Successfully parsed JSON output for sample 3.")
+                logger.info("Successfully parsed JSON output for sample 3.")
                 if isinstance(parsed, list) and not parsed:
-                    print("Received empty array as expected for no stocks.")
+                    logger.info("Received empty array as expected for no stocks.")
             except json.JSONDecodeError as je:
-                print(f"Failed to parse JSON output for sample 3: {{je}}")
+                logger.error(f"Failed to parse JSON output for sample 3: {{je}}")
 
     except ValueError as ve:
-        print(f"Configuration Error: {{ve}}")
+        logger.error(f"Configuration Error: {{ve}}")
     except Exception as e:
-        print(f"An unexpected error occurred during Gemini client test: {{e}}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"An unexpected error occurred during Gemini client test: {{e}}", exc_info=True)
