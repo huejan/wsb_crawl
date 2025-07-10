@@ -1,0 +1,24 @@
+# Reddit API
+praw
+
+# Google Gemini API
+google-generativeai
+
+# Web Framework
+Flask
+# or FastAPI (can decide later, Flask is simpler for now)
+# uvicorn # if using FastAPI
+# python-dotenv # To load .env files
+python-dotenv
+
+# Scheduler
+schedule
+
+# For serving static files if needed with Flask, though not strictly for API
+# whitenoise
+
+# Basic HTTP requests if needed (PRAW and Gemini SDKs should handle most)
+requests
+
+# WSGI Server for Flask in production
+gunicorn
