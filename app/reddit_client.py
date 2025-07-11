@@ -17,9 +17,24 @@ def get_reddit_instance():
     username = os.getenv("REDDIT_USERNAME")
     password = os.getenv("REDDIT_PASSWORD")
 
+    # --- DEBUG LOGGING FOR REDDIT ENV VARS ---
+    # WARNING: Logging secrets is a security risk. Remove after debugging.
+    logger.debug("--- Reddit .env Variable Check ---")
+    logger.debug(f"  REDDIT_CLIENT_ID: '{client_id}' (Type: {type(client_id)})")
+    if client_secret:
+        secret_display = f"'{client_secret[:4]}...{client_secret[-4:]}'" if len(client_secret) > 8 else "'**** (short secret)'"
+        logger.debug(f"  REDDIT_CLIENT_SECRET: {secret_display} (Type: {type(client_secret)}, Length: {len(client_secret)})")
+    else:
+        logger.debug("  REDDIT_CLIENT_SECRET: Not set or empty")
+    logger.debug(f"  REDDIT_USER_AGENT: '{user_agent}' (Type: {type(user_agent)})")
+    logger.debug(f"  REDDIT_USERNAME: '{username if username else 'Not set or empty'}' (Type: {type(username)})")
+    logger.debug(f"  REDDIT_PASSWORD: '{'********' if password else 'Not set or empty'}' (Type: {type(password)}, Present: {bool(password)})")
+    logger.debug("--- End Reddit .env Variable Check ---")
+    # --- END DEBUG LOGGING ---
+
     if not all([client_id, client_secret, user_agent]):
         # Log error and raise ValueError
-        err_msg = "Missing Reddit API credentials in .env file (CLIENT_ID, CLIENT_SECRET, USER_AGENT)"
+        err_msg = "Missing Reddit API credentials in .env file (CLIENT_ID, CLIENT_SECRET, USER_AGENT are mandatory)"
         logger.error(err_msg)
         raise ValueError(err_msg)
 
