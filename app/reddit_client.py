@@ -32,12 +32,21 @@ def get_reddit_instance():
             password=password,
             # check_for_async=False # Add this if you encounter issues with async operations, though PRAW handles it mostly
         )
-        logger.info("Reddit instance created successfully.")
-        # You can also log the username if provided, to confirm which account is being used (be careful with logging PII)
-        # logger.debug(f"Reddit instance for user: {username if username else 'read-only default'}")
+        logger.info("Reddit instance created successfully (PRAW object initialized).")
+
+        # Add detailed logging about the PRAW instance state
+        try:
+            user_me = reddit.user.me()
+            user_identity = str(user_me) if user_me else "None (app-only or unauthenticated user context)"
+            logger.debug(f"PRAW instance check: read_only={reddit.read_only}, user.me()='{user_identity}'")
+        except Exception as praw_check_exc:
+            # This can happen if not authenticated or if .me() fails for other reasons
+            logger.warning(f"PRAW instance check for user.me() failed: {praw_check_exc}", exc_info=True)
+            logger.debug(f"PRAW instance check: read_only={reddit.read_only} (user.me() check failed)")
+
         return reddit
     except Exception as e:
-        logger.error(f"Failed to create Reddit instance: {e}", exc_info=True)
+        logger.error(f"Failed to create Reddit instance during praw.Reddit() call: {e}", exc_info=True)
         raise # Re-raise the exception after logging
 
 def get_wallstreetbets_posts(reddit: praw.Reddit, limit: int = 25):
