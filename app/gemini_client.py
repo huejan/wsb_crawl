@@ -21,7 +21,7 @@ def configure_gemini():
         logger.error(f"Failed to configure Gemini API: {{e}}", exc_info=True)
         raise
 
-def get_gemini_model(model_name="gemini-1.5-flash-latest"): # Using 1.5 Flash as requested
+def get_gemini_model(model_name="gemini-2.5-flash"): # Changed to 2.5 as per user request
     """
     Returns an instance of the specified Gemini model.
     """
