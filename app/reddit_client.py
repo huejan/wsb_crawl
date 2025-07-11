@@ -65,10 +65,9 @@ def get_wallstreetbets_posts(reddit: praw.Reddit, limit: int = 25):
     subreddit_name = "wallstreetbets"
     try:
         subreddit = reddit.subreddit(subreddit_name)
-        # Fetching 'hot' posts for now, could also be 'new', 'top', etc.
-        # Consider fetching a mix or focusing on 'new' for timely analysis.
-        posts = list(subreddit.hot(limit=limit))
-        logger.info(f"Fetched {len(posts)} posts from r/{subreddit_name}")
+        # Fetching 'new' posts as per user request for analyzing the latest discussions.
+        posts = list(subreddit.new(limit=limit))
+        logger.info(f"Fetched {len(posts)} new posts from r/{subreddit_name}")
 
         # Example: Print titles and get some comments
         # for post in posts:
