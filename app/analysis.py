@@ -38,23 +38,38 @@ def process_single_submission(submission, gemini_model):
             PROCESSED_ITEM_IDS.add(submission.id)
             return None
 
-        if not isinstance(parsed_analysis, list):
-            logger.error(f"Unexpected data type from Gemini analysis for {{submission.id}}. Expected list, got {{type(parsed_analysis)}}. Content: {{analysis_json_str[:200]}}")
+        # We now expect a JSON object with specific keys
+        if not isinstance(parsed_analysis, dict):
+            logger.error(f"Unexpected data type from Gemini analysis for {{submission.id}}. Expected dict, got {{type(parsed_analysis)}}. Content: {{analysis_json_str[:200]}}")
             PROCESSED_ITEM_IDS.add(submission.id)
             return None
 
-        logger.info(f"Gemini Analysis for {{submission.id}} (parsed {{len(parsed_analysis)}} symbols)")
-        logger.debug(f"Parsed analysis for {{submission.id}}: {{parsed_analysis}}")
+        # Extract the expected fields, defaulting to empty lists if not found
+        symbols = parsed_analysis.get('analyzed_symbols', [])
+        topics = parsed_analysis.get('discussion_topics', [])
+        companies = parsed_analysis.get('mentioned_companies', [])
+
+        # Validate that symbols is a list (as it's critical)
+        if not isinstance(symbols, list):
+            logger.error(f"Invalid 'analyzed_symbols' format from Gemini for {{submission.id}}. Expected list, got {{type(symbols)}}.")
+            symbols = [] # Default to empty if format is wrong
+
+        logger.info(f"Gemini Analysis for {{submission.id}}: Parsed {{len(symbols)}} symbols, {{len(topics)}} topics, {{len(companies)}} companies.")
+        logger.debug(f"Full parsed analysis for {{submission.id}}: {{parsed_analysis}}")
 
         ANALYZED_DATA_STORE.append({
             'source_id': submission.id,
             'source_title': submission.title,
             'source_url': f"https://www.reddit.com{{submission.permalink}}",
-            'analyzed_symbols': parsed_analysis,
+            'analysis_result': { # Store the structured result
+                'analyzed_symbols': symbols,
+                'discussion_topics': topics,
+                'mentioned_companies': companies
+            },
             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
         })
         PROCESSED_ITEM_IDS.add(submission.id)
-        return parsed_analysis
+        return parsed_analysis # Return the full parsed object for now
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON analysis from Gemini for submission ID {{submission.id}}: {{e}}", exc_info=True)
@@ -103,16 +118,16 @@ if __name__ == "__main__":
         if reddit and gemini:
             run_analysis_cycle(reddit, gemini, post_limit=5)
 
-            logger.info("--- Current Analyzed Data Store (Structured): ---")
+            logger.info("--- Current Analyzed Data Store (New Structure): ---")
             for item in get_analyzed_data():
-                logger.info(f"ID: {{item['source_id']}}, Title: {{item['source_title'][:60]}}..., Symbols: {{item.get('analyzed_symbols')}}")
+                logger.info(f"ID: {{item['source_id']}}, Title: {{item['source_title'][:60]}}..., Analysis: {{item.get('analysis_result')}}")
 
             logger.info("--- Running second analysis cycle (should skip previous posts) ---")
             run_analysis_cycle(reddit, gemini, post_limit=5)
 
-            logger.info("--- Final Analyzed Data Store (Structured): ---")
+            logger.info("--- Final Analyzed Data Store (New Structure): ---")
             for item in get_analyzed_data():
-                logger.info(f"ID: {{item['source_id']}}, Title: {{item['source_title'][:60]}}..., Symbols: {{item.get('analyzed_symbols')}}")
+                logger.info(f"ID: {{item['source_id']}}, Title: {{item['source_title'][:60]}}..., Analysis: {{item.get('analysis_result')}}")
         else:
             logger.error("Failed to initialize Reddit or Gemini instances for testing.")
 

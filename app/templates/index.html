@@ -114,6 +114,14 @@
             color: #7f8c8d;
             font-style: italic;
         }
+        .topic-list, .company-list {
+            list-style-type: disc;
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+        .topic-list li, .company-list li {
+            margin-bottom: 3px;
+        }
     </style>
 </head>
 <body>
@@ -126,9 +134,9 @@
                 <h2><a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_title }}</a></h2>
                 <p class="meta">Source ID: {{ item.source_id }} | Timestamp: {{ item.timestamp }}</p>
                 <h4>Analyzed Symbols:</h4>
-                {% if item.analyzed_symbols and item.analyzed_symbols|length > 0 %}
+                {% if item.analysis_result and item.analysis_result.analyzed_symbols and item.analysis_result.analyzed_symbols|length > 0 %}
                     <ul class="symbol-list">
-                        {% for symbol_info in item.analyzed_symbols %}
+                        {% for symbol_info in item.analysis_result.analyzed_symbols %}
                         <li>
                             <strong>{{ symbol_info.symbol | upper }}</strong>
                             <p><em>Reason:</em> {{ symbol_info.reason }}</p>
@@ -136,15 +144,36 @@
                         </li>
                         {% endfor %}
                     </ul>
-                {% elif item.analyzed_symbols is defined and item.analyzed_symbols|length == 0 %}
+                {% elif item.analysis_result and item.analysis_result.analyzed_symbols is defined and item.analysis_result.analyzed_symbols|length == 0 %}
                     <p class="no-symbols">No specific stock/ETF symbols identified in this discussion by Gemini.</p>
-                {% else %}
-                    <p class="analysis-error">Gemini analysis might have encountered an issue or returned unexpected data.
-                        {% if item.analyzed_symbols and item.analyzed_symbols.error %}
-                            Error: {{ item.analyzed_symbols.error }}
-                            {% if item.analyzed_symbols.details %} ({{ item.analyzed_symbols.details }}){% endif %}
-                        {% endif %}
+                {% elif item.analysis_result and item.analysis_result.error %}
+                     <p class="analysis-error">Gemini analysis returned an error: {{ item.analysis_result.error }}
+                        {% if item.analysis_result.details %} ({{ item.analysis_result.details }}){% endif %}
                     </p>
+                {% else %}
+                    <p class="analysis-error">Gemini symbol analysis data is missing or in an unexpected format.</p>
+                {% endif %}
+
+                <h4>Discussion Topics:</h4>
+                {% if item.analysis_result and item.analysis_result.discussion_topics and item.analysis_result.discussion_topics|length > 0 %}
+                    <ul class="topic-list">
+                        {% for topic in item.analysis_result.discussion_topics %}
+                        <li>{{ topic }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="no-symbols">No specific discussion topics identified by Gemini.</p>
+                {% endif %}
+
+                <h4>Mentioned Companies:</h4>
+                {% if item.analysis_result and item.analysis_result.mentioned_companies and item.analysis_result.mentioned_companies|length > 0 %}
+                    <ul class="company-list">
+                        {% for company in item.analysis_result.mentioned_companies %}
+                        <li>{{ company }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="no-symbols">No specific company names identified by Gemini.</p>
                 {% endif %}
             </div>
             {% endfor %}
