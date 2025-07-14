@@ -6,7 +6,7 @@
     <title>WSB Pulse</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #12181B;
@@ -15,10 +15,6 @@
             --text-muted-color: #8899A6;
             --accent-color: #2ECC71;
             --border-color: #334147;
-            --positive-color: #27AE60;
-            --negative-color: #E74C3C;
-            --speculative-color: #F1C40F;
-            --neutral-color: #8899A6;
         }
 
         body {
@@ -89,89 +85,15 @@
         .meta {
             font-size: 0.8rem;
             color: var(--text-muted-color);
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-        }
-
-        .analysis-section {
-            margin-bottom: 1.5rem;
-        }
-        .analysis-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .analysis-section h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-muted-color);
-            margin: 0 0 0.75rem 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .symbol-list {
-            list-style-type: none;
-            padding-left: 0;
-            margin: 0;
-        }
-        .symbol-list li {
-            border-left: 3px solid var(--border-color);
-            padding: 0.75rem 1rem;
             margin-bottom: 1rem;
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 0 6px 6px 0;
-        }
-        .symbol-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.25rem;
-        }
-        .symbol-header strong {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-color);
-        }
-        .sentiment {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 12px;
-            text-transform: uppercase;
-        }
-        .sentiment-positive { background-color: var(--positive-color); color: #fff; }
-        .sentiment-negative { background-color: var(--negative-color); color: #fff; }
-        .sentiment-speculative { background-color: var(--speculative-color); color: #111; }
-        .sentiment-neutral, .sentiment-mixed, .sentiment-unknown { background-color: var(--neutral-color); color: #fff; }
-
-        .symbol-reason {
-            font-size: 0.9rem;
-            color: var(--text-color);
-            margin: 0;
         }
 
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .tag {
-            background-color: #334147;
+        .summary {
+            font-size: 1rem;
             color: var(--text-color);
-            padding: 4px 10px;
-            border-radius: 16px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        .tag.count {
-            background-color: var(--border-color);
-            color: var(--text-muted-color);
-        }
-        .tag.trending {
-            background-color: var(--accent-color);
-            color: #111;
-            font-weight: 700;
+            border-left: 3px solid var(--accent-color);
+            padding-left: 1rem;
+            margin: 1rem 0 0 0;
         }
 
         .no-content {
@@ -193,81 +115,26 @@
         .footer a:hover {
             text-decoration: underline;
         }
-
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>WSB Pulse</h1>
-            <p>Real-time Topic &amp; Ticker Analysis of r/wallstreetbets</p>
+            <p>Real-time Summaries of r/wallstreetbets</p>
         </header>
 
         <div class="discussion-grid">
             {% if analyzed_discussions %}
                 {% for item in analyzed_discussions %}
-                <div class="discussion-item">
-                    <h2><a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_title }}</a></h2>
-                    <p class="meta">Source ID: {{ item.source_id }} | Timestamp: {{ item.timestamp }}</p>
-
-                    {% if item.analysis_result %}
-                        {% if item.analysis_result.analyzed_symbols and item.analysis_result.analyzed_symbols|length > 0 %}
-                        <div class="analysis-section">
-                            <h4>Symbols</h4>
-                            <ul class="symbol-list">
-                                {% for symbol_info in item.analysis_result.analyzed_symbols %}
-                                <li>
-                                    <div class="symbol-header">
-                                        <strong>{{ symbol_info.symbol | upper }}</strong>
-                                        <span class="sentiment sentiment-{{ symbol_info.sentiment | lower }}">{{ symbol_info.sentiment }}</span>
-                                        {% set count = symbol_frequencies.get(symbol_info.symbol | upper, 0) %}
-                                        {% if count > 2 %}
-                                            <span class="tag trending">Trending ({{ count }})</span>
-                                        {% else %}
-                                            <span class="tag count">Mentions: {{ count }}</span>
-                                        {% endif %}
-                                    </div>
-                                    <p class="symbol-reason">{{ symbol_info.reason }}</p>
-                                </li>
-                                {% endfor %}
-                            </ul>
+                    {# Only display the item if a summary exists and it's not the marker for no summary #}
+                    {% if item.summary and item.summary != 'NO_SUMMARY_AVAILABLE' %}
+                        <div class="discussion-item">
+                            <h2><a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_title }}</a></h2>
+                            <p class="meta">Source ID: {{ item.source_id }} | Timestamp: {{ item.timestamp }}</p>
+                            <p class="summary">{{ item.summary }}</p>
                         </div>
-                        {% endif %}
-
-                        {% if item.analysis_result.discussion_topics and item.analysis_result.discussion_topics|length > 0 %}
-                        <div class="analysis-section">
-                            <h4>Topics</h4>
-                            <div class="tags-container">
-                                {% for topic in item.analysis_result.discussion_topics %}
-                                    {% set count = topic_frequencies.get(topic, 0) %}
-                                    <span class="tag {% if count > 2 %}trending{% endif %}">{{ topic }} ({{ count }})</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        {% if item.analysis_result.mentioned_companies and item.analysis_result.mentioned_companies|length > 0 %}
-                        <div class="analysis-section">
-                            <h4>Companies</h4>
-                            <div class="tags-container">
-                                {% for company in item.analysis_result.mentioned_companies %}
-                                    {% set count = company_frequencies.get(company, 0) %}
-                                    <span class="tag {% if count > 2 %}trending{% endif %}">{{ company }} ({{ count }})</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        {% if item.analysis_result.error %}
-                            <p class="no-content">Gemini analysis returned an error: {{ item.analysis_result.error }}</p>
-                        {% elif (item.analysis_result.analyzed_symbols|length == 0) and (item.analysis_result.discussion_topics|length == 0) and (item.analysis_result.mentioned_companies|length == 0) %}
-                             <p class="no-content">No specific financial topics, symbols, or companies were identified in this post.</p>
-                        {% endif %}
-
-                    {% else %}
-                        <p class="no-content">Analysis data not available for this post.</p>
                     {% endif %}
-                </div>
                 {% endfor %}
             {% else %}
                 <p class="no-content" style="text-align: center; padding: 2rem;">No discussions analyzed yet, or the crawler is still warming up. Please check back later.</p>
