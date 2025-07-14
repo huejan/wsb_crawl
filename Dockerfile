@@ -31,4 +31,5 @@ EXPOSE 8080
 # though our app/main.py and .env.example already default to 8080.
 # The `app.main:app` refers to the `app` Flask instance in the `app/main.py` file.
 # Added --log-level debug, --access-logfile -, and --error-logfile - for more verbose logging to stdout/stderr.
-CMD ["sh", "-c", "gunicorn --workers ${GUNICORN_WORKERS:-2} --bind 0.0.0.0:${PORT:-8080} --log-level debug --access-logfile - --error-logfile - app.main:app"]
+# Added --preload to ensure the scheduler starts only once in the master process before forking workers.
+CMD ["sh", "-c", "gunicorn --workers ${GUNICORN_WORKERS:-2} --bind 0.0.0.0:${PORT:-8080} --log-level debug --access-logfile - --error-logfile - --preload app.main:app"]
