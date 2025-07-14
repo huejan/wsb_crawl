@@ -91,8 +91,15 @@ def run_analysis_cycle(reddit_instance, gemini_model, post_limit=10):
         return
 
     new_analyses_count = 0
-    for post in posts:
+    for i, post in enumerate(posts):
         if post.id not in PROCESSED_ITEM_IDS:
+            # Add a delay between API calls to respect Gemini's rate limits
+            # The free tier is often around 10-15 requests per minute.
+            # A 5-6 second delay should be safe.
+            if i > 0: # No need to sleep before the very first request
+                logger.debug("Rate limit mitigation: Sleeping for 6 seconds before next Gemini API call.")
+                time.sleep(6)
+
             result = process_single_submission(post, gemini_model)
             if result is not None: # Check if result is not None (can be an empty list)
                 new_analyses_count +=1
