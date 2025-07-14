@@ -7,25 +7,13 @@ load_dotenv()
 import logging
 
 # --- Basic Logging Setup ---
-# Configure logging to output to stdout, which Docker logs will capture.
-# Gunicorn will also handle this output.
-logging.basicConfig(level=logging.DEBUG, # Set to DEBUG to capture all levels of logs
+logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s [%(name)s] [%(threadName)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 # --- End Basic Logging Setup ---
 
-logger.info("dotenv loaded in main.py")
-try:
-    import google.generativeai as genai # Test import
-    logger.info("Successfully imported google.generativeai in main.py")
-except ImportError as e:
-    logger.critical(f"Failed to import google.generativeai in main.py: {e}", exc_info=True)
-    raise
-except Exception as e:
-    logger.critical(f"Unexpected error importing google.generativeai in main.py: {e}", exc_info=True)
-    raise
-
+logger.info("Initializing WSB Pulse...")
 
 from flask import Flask, render_template, jsonify
 
