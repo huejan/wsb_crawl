@@ -103,14 +103,25 @@ JSON Output:
             return response.text
         elif response.prompt_feedback:
             logger.warning(f"Gemini prompt feedback: {{response.prompt_feedback}}")
-            return '{{ "error": "Analysis failed due to prompt issues", "details": "' + str(response.prompt_feedback).replace('"',"'") + '", "analyzed_symbols": [], "discussion_topics": [], "mentioned_companies": [] }}'
+            error_obj = {
+                "error": "Analysis failed due to prompt issues",
+                "details": str(response.prompt_feedback),
+                "analyzed_symbols": [], "discussion_topics": [], "mentioned_companies": []
+            }
+            return json.dumps(error_obj)
         else:
             logger.warning("Gemini response had no usable parts and no explicit feedback.")
-            return '{{ "error": "No analysis result from Gemini", "analyzed_symbols": [], "discussion_topics": [], "mentioned_companies": [] }}'
+            error_obj = { "error": "No analysis result from Gemini", "analyzed_symbols": [], "discussion_topics": [], "mentioned_companies": [] }
+            return json.dumps(error_obj)
 
     except Exception as e:
         logger.error(f"Error analyzing text with Gemini: {{e}}", exc_info=True)
-        return '{{ "error": "Error during Gemini analysis", "details": "' + str(e).replace('"',"'") + '", "analyzed_symbols": [], "discussion_topics": [], "mentioned_companies": [] }}'
+        error_obj = {
+            "error": "Error during Gemini analysis",
+            "details": str(e),
+            "analyzed_symbols": [], "discussion_topics": [], "mentioned_companies": []
+        }
+        return json.dumps(error_obj)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
