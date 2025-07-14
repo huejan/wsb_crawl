@@ -30,7 +30,14 @@ except Exception as e:
 from flask import Flask, render_template, jsonify
 
 # Import components from your application AFTER load_dotenv
-from .analysis import get_analyzed_data, ANALYZED_DATA_STORE, PROCESSED_ITEM_IDS # analysis also uses print, might need update
+from .analysis import (
+    get_analyzed_data,
+    get_symbol_frequencies,
+    get_topic_frequencies,
+    get_company_frequencies,
+    ANALYZED_DATA_STORE, # Keep for status endpoints
+    PROCESSED_ITEM_IDS, # Keep for status endpoints
+)
 from .scheduler import run_scheduler_in_thread, initialize_clients as initialize_scheduler_clients # scheduler uses print
 
 app = Flask(__name__)
@@ -61,7 +68,17 @@ def index():
     #       For now, the template will just display the raw analysis.
 
     data_for_template = get_analyzed_data() # Gets a sorted list
-    return render_template('index.html', analyzed_discussions=data_for_template)
+
+    # Get frequency data
+    symbol_freq = get_symbol_frequencies()
+    topic_freq = get_topic_frequencies()
+    company_freq = get_company_frequencies()
+
+    return render_template('index.html',
+                           analyzed_discussions=data_for_template,
+                           symbol_frequencies=symbol_freq,
+                           topic_frequencies=topic_freq,
+                           company_frequencies=company_freq)
 
 @app.route('/health')
 def health_check():

@@ -6,8 +6,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# --- In-Memory Data Stores ---
 ANALYZED_DATA_STORE = []
 PROCESSED_ITEM_IDS = set()
+
+# --- Frequency Counters ---
+SYMBOL_FREQUENCIES = {}
+TOPIC_FREQUENCIES = {}
+COMPANY_FREQUENCIES = {}
 
 def extract_relevant_text_from_post(post):
     text_parts = [post.title]
@@ -56,6 +62,19 @@ def process_single_submission(submission, gemini_model):
 
         logger.info(f"Gemini Analysis for {{submission.id}}: Parsed {{len(symbols)}} symbols, {{len(topics)}} topics, {{len(companies)}} companies.")
         logger.debug(f"Full parsed analysis for {{submission.id}}: {{parsed_analysis}}")
+
+        # --- Update Frequency Counts ---
+        for symbol_obj in symbols:
+            symbol_ticker = symbol_obj.get('symbol', '').upper()
+            if symbol_ticker:
+                SYMBOL_FREQUENCIES[symbol_ticker] = SYMBOL_FREQUENCIES.get(symbol_ticker, 0) + 1
+
+        for topic in topics:
+            TOPIC_FREQUENCIES[topic] = TOPIC_FREQUENCIES.get(topic, 0) + 1
+
+        for company in companies:
+            COMPANY_FREQUENCIES[company] = COMPANY_FREQUENCIES.get(company, 0) + 1
+        # --- End Frequency Update ---
 
         ANALYZED_DATA_STORE.append({
             'source_id': submission.id,
@@ -112,6 +131,17 @@ def run_analysis_cycle(reddit_instance, gemini_model, post_limit=10):
 
 def get_analyzed_data():
     return sorted(ANALYZED_DATA_STORE, key=lambda x: x['timestamp'], reverse=True)
+
+# --- Frequency Data Accessors ---
+def get_symbol_frequencies():
+    return SYMBOL_FREQUENCIES
+
+def get_topic_frequencies():
+    return TOPIC_FREQUENCIES
+
+def get_company_frequencies():
+    return COMPANY_FREQUENCIES
+# --- End Frequency Data Accessors ---
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,

@@ -3,195 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WSB Stock Discussion Analyzer</title>
+    <title>WSB Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #12181B;
+            --card-bg-color: #1A2226;
+            --text-color: #E0E0E0;
+            --text-muted-color: #8899A6;
+            --accent-color: #2ECC71;
+            --border-color: #334147;
+            --positive-color: #27AE60;
+            --negative-color: #E74C3C;
+            --speculative-color: #F1C40F;
+            --neutral-color: #8899A6;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f4f6f8;
-            color: #333;
+            padding: 2rem 1rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
+
         .container {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #2c3e50;
+
+        header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 3rem;
         }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            color: var(--text-muted-color);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .discussion-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
         .discussion-item {
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 20px;
-            background-color: #fdfdfd;
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+        .discussion-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
         .discussion-item h2 {
-            font-size: 1.2em;
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #3498db;
+            font-size: 1.25rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 600;
         }
+
         .discussion-item h2 a {
             text-decoration: none;
-            color: inherit;
+            color: var(--accent-color);
+            transition: color 0.2s ease;
         }
         .discussion-item h2 a:hover {
-            text-decoration: underline;
+            color: #fff;
         }
-        .discussion-item .meta {
-            font-size: 0.9em;
-            color: #7f8c8d;
-            margin-bottom: 10px;
+
+        .meta {
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
         }
-        .analysis-content {
-            white-space: pre-wrap; /* Preserve formatting from Gemini output */
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #eee;
-            font-family: "Courier New", Courier, monospace;
-            font-size: 0.95em;
-            overflow-x: auto; /* Allow horizontal scrolling for long lines */
+
+        .analysis-section {
+            margin-bottom: 1.5rem;
         }
-        .no-data {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
+        .analysis-section:last-child {
+            margin-bottom: 0;
         }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 0.9em;
-            color: #95a5a6;
+
+        .analysis-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted-color);
+            margin: 0 0 0.75rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        /* Basic styling for tables if Gemini output contains them */
-        .analysis-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .analysis-content th, .analysis-content td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .analysis-content th {
-            background-color: #f2f2f2;
-        }
+
         .symbol-list {
             list-style-type: none;
             padding-left: 0;
+            margin: 0;
         }
         .symbol-list li {
-            border: 1px solid #eee;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            background-color: #f9f9f9;
+            border-left: 3px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 0 6px 6px 0;
         }
-        .symbol-list li strong {
-            font-size: 1.1em;
-            color: #2980b9;
+        .symbol-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.25rem;
         }
-        .symbol-list li p {
-            margin: 5px 0;
-            font-size: 0.95em;
+        .symbol-header strong {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-color);
         }
-        .sentiment-positive { color: #27ae60; font-weight: bold; }
-        .sentiment-negative { color: #c0392b; font-weight: bold; }
-        .sentiment-neutral { color: #7f8c8d; }
-        .sentiment-speculative { color: #f39c12; }
-        .sentiment-mixed { color: #8e44ad; }
-        .sentiment-unknown { color: #bdc3c7; }
-        .no-symbols, .analysis-error {
-            color: #7f8c8d;
+        .sentiment {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+        .sentiment-positive { background-color: var(--positive-color); color: #fff; }
+        .sentiment-negative { background-color: var(--negative-color); color: #fff; }
+        .sentiment-speculative { background-color: var(--speculative-color); color: #111; }
+        .sentiment-neutral, .sentiment-mixed, .sentiment-unknown { background-color: var(--neutral-color); color: #fff; }
+
+        .symbol-reason {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .tag {
+            background-color: #334147;
+            color: var(--text-color);
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .tag.count {
+            background-color: var(--border-color);
+            color: var(--text-muted-color);
+        }
+        .tag.trending {
+            background-color: var(--accent-color);
+            color: #111;
+            font-weight: 700;
+        }
+
+        .no-content {
+            font-size: 0.9rem;
+            color: var(--text-muted-color);
             font-style: italic;
         }
-        .topic-list, .company-list {
-            list-style-type: disc;
-            padding-left: 20px;
-            margin-top: 5px;
+
+        .footer {
+            text-align: center;
+            margin-top: 4rem;
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
         }
-        .topic-list li, .company-list li {
-            margin-bottom: 3px;
+        .footer a {
+            color: var(--accent-color);
+            text-decoration: none;
         }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>WallStreetBets - Stock & ETF Discussion Overview</h1>
+        <header>
+            <h1>WSB Pulse</h1>
+            <p>Real-time Topic &amp; Ticker Analysis of r/wallstreetbets</p>
+        </header>
 
-        {% if analyzed_discussions %}
-            {% for item in analyzed_discussions %}
-            <div class="discussion-item">
-                <h2><a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_title }}</a></h2>
-                <p class="meta">Source ID: {{ item.source_id }} | Timestamp: {{ item.timestamp }}</p>
-                <h4>Analyzed Symbols:</h4>
-                {% if item.analysis_result and item.analysis_result.analyzed_symbols and item.analysis_result.analyzed_symbols|length > 0 %}
-                    <ul class="symbol-list">
-                        {% for symbol_info in item.analysis_result.analyzed_symbols %}
-                        <li>
-                            <strong>{{ symbol_info.symbol | upper }}</strong>
-                            <p><em>Reason:</em> {{ symbol_info.reason }}</p>
-                            <p><em>Sentiment:</em> <span class="sentiment-{{ symbol_info.sentiment | lower }}">{{ symbol_info.sentiment }}</span></p>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                {% elif item.analysis_result and item.analysis_result.analyzed_symbols is defined and item.analysis_result.analyzed_symbols|length == 0 %}
-                    <p class="no-symbols">No specific stock/ETF symbols identified in this discussion by Gemini.</p>
-                {% elif item.analysis_result and item.analysis_result.error %}
-                     <p class="analysis-error">Gemini analysis returned an error: {{ item.analysis_result.error }}
-                        {% if item.analysis_result.details %} ({{ item.analysis_result.details }}){% endif %}
-                    </p>
-                {% else %}
-                    <p class="analysis-error">Gemini symbol analysis data is missing or in an unexpected format.</p>
-                {% endif %}
+        <div class="discussion-grid">
+            {% if analyzed_discussions %}
+                {% for item in analyzed_discussions %}
+                <div class="discussion-item">
+                    <h2><a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">{{ item.source_title }}</a></h2>
+                    <p class="meta">Source ID: {{ item.source_id }} | Timestamp: {{ item.timestamp }}</p>
 
-                <h4>Discussion Topics:</h4>
-                {% if item.analysis_result and item.analysis_result.discussion_topics and item.analysis_result.discussion_topics|length > 0 %}
-                    <ul class="topic-list">
-                        {% for topic in item.analysis_result.discussion_topics %}
-                        <li>{{ topic }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="no-symbols">No specific discussion topics identified by Gemini.</p>
-                {% endif %}
+                    {% if item.analysis_result %}
+                        {% if item.analysis_result.analyzed_symbols and item.analysis_result.analyzed_symbols|length > 0 %}
+                        <div class="analysis-section">
+                            <h4>Symbols</h4>
+                            <ul class="symbol-list">
+                                {% for symbol_info in item.analysis_result.analyzed_symbols %}
+                                <li>
+                                    <div class="symbol-header">
+                                        <strong>{{ symbol_info.symbol | upper }}</strong>
+                                        <span class="sentiment sentiment-{{ symbol_info.sentiment | lower }}">{{ symbol_info.sentiment }}</span>
+                                        {% set count = symbol_frequencies.get(symbol_info.symbol | upper, 0) %}
+                                        {% if count > 2 %}
+                                            <span class="tag trending">Trending ({{ count }})</span>
+                                        {% else %}
+                                            <span class="tag count">Mentions: {{ count }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="symbol-reason">{{ symbol_info.reason }}</p>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
 
-                <h4>Mentioned Companies:</h4>
-                {% if item.analysis_result and item.analysis_result.mentioned_companies and item.analysis_result.mentioned_companies|length > 0 %}
-                    <ul class="company-list">
-                        {% for company in item.analysis_result.mentioned_companies %}
-                        <li>{{ company }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="no-symbols">No specific company names identified by Gemini.</p>
-                {% endif %}
-            </div>
-            {% endfor %}
-        {% else %}
-            <p class="no-data">No discussions analyzed yet, or the crawler is still warming up. Please check back later.</p>
-        {% endif %}
+                        {% if item.analysis_result.discussion_topics and item.analysis_result.discussion_topics|length > 0 %}
+                        <div class="analysis-section">
+                            <h4>Topics</h4>
+                            <div class="tags-container">
+                                {% for topic in item.analysis_result.discussion_topics %}
+                                    {% set count = topic_frequencies.get(topic, 0) %}
+                                    <span class="tag {% if count > 2 %}trending{% endif %}">{{ topic }} ({{ count }})</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if item.analysis_result.mentioned_companies and item.analysis_result.mentioned_companies|length > 0 %}
+                        <div class="analysis-section">
+                            <h4>Companies</h4>
+                            <div class="tags-container">
+                                {% for company in item.analysis_result.mentioned_companies %}
+                                    {% set count = company_frequencies.get(company, 0) %}
+                                    <span class="tag {% if count > 2 %}trending{% endif %}">{{ company }} ({{ count }})</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if item.analysis_result.error %}
+                            <p class="no-content">Gemini analysis returned an error: {{ item.analysis_result.error }}</p>
+                        {% elif (item.analysis_result.analyzed_symbols|length == 0) and (item.analysis_result.discussion_topics|length == 0) and (item.analysis_result.mentioned_companies|length == 0) %}
+                             <p class="no-content">No specific financial topics, symbols, or companies were identified in this post.</p>
+                        {% endif %}
+
+                    {% else %}
+                        <p class="no-content">Analysis data not available for this post.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="no-content" style="text-align: center; padding: 2rem;">No discussions analyzed yet, or the crawler is still warming up. Please check back later.</p>
+            {% endif %}
+        </div>
     </div>
 
     <div class="footer">
-        <p>WSB Gemini Crawler | Data updates periodically.</p>
-        <p><a href="/status/data" target="_blank">View Raw JSON Data</a> | <a href="/status/counts" target="_blank">View Status Counts</a></p>
+        <p>WSB Pulse | <a href="/status/data" target="_blank">View Raw JSON Data</a> | <a href="/status/counts" target="_blank">View Status Counts</a></p>
     </div>
-
-    <script>
-        // Optional: Auto-refresh the page or fetch data dynamically
-        // setTimeout(() => {
-        //     window.location.reload();
-        // }, 300000); // Refresh every 5 minutes (300000 ms)
-    </script>
 </body>
 </html>
